@@ -134,6 +134,7 @@ async def call_custom_api(request: APIRequest):
     try:
         start_time = time.time()
         
+        
         # Verificar caché para requests GET
         cache_key = None
         if request.method.upper() == "GET":
