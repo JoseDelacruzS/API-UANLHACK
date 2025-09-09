@@ -1,13 +1,8 @@
-from app.database.connection import engine
-from app.core.config import settings
+from app.config.database import initialize_database
 
 if __name__ == "__main__":
-    print(f"Cadena de conexión: {settings.DATABASE_URL}")
     try:
-        conn = engine.connect()
-        print("Conexión exitosa a la base de datos Hackaton-IBM.")
-        conn.close()
+        initialize_database()
+        print("Conexión exitosa a la base de datos PostgreSQL en Supabase.")
     except Exception as e:
-        import traceback
-        print("Error al conectar:")
-        traceback.print_exc()
+        print(f"Error al conectar: {e}")
