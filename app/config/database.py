@@ -4,8 +4,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from app.config.settings import settings
 
-# Metadatos para el esquema
-metadata = MetaData(schema="uanl")
+# Metadatos para el esquema (sin schema por defecto para evitar errores si no existe)
+metadata = MetaData()
 
 # Base para modelos SQLAlchemy
 Base = declarative_base(metadata=metadata)
