@@ -7,7 +7,7 @@ from loguru import logger
 
 from app.config.settings import settings
 from app.schemas.tickets import WatsonTicketRequest, TicketCreate
-from app.models.tickets import Ticket
+from app.models.tickets import Ticket, TicketPriority
 from app.models.clients import Client
 from app.services.ticket_service import TicketService
 

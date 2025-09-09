@@ -6,9 +6,10 @@ from app.config.database import Base
 class Operator(Base):
     """Modelo para operadores"""
     __tablename__ = "operators"
+    __table_args__ = {'schema': 'uanl'}
     
     operator_id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False, unique=True, index=True)
+    name = Column(Text, nullable=False, unique=True, index=True)
     
     # Relación con llamadas
     calls = relationship("Call", back_populates="operator")
