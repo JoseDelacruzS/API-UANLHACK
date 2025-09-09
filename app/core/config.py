@@ -9,7 +9,7 @@ class Settings:
     API_V1_STR: str = "/api/v1"
     
     # Database Configuration
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://user:password@localhost:5432/uanl_hack_db")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres:ROOT@localhost:5432/Hackaton-IBM")
     
     # External APIs Configuration
     API_TIMEOUT: int = 30
