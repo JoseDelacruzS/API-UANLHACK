@@ -10,6 +10,10 @@ class CallBase(BaseModel):
     client_id: int
     call_date: date
     conversation: Optional[str] = None
+    sentimiento: Optional[str] = None
+    impacto: Optional[str] = None
+    urgencia: Optional[str] = None
+    tema: Optional[str] = None
 
 
 class CallCreate(CallBase):
@@ -21,6 +25,10 @@ class CallUpdate(BaseModel):
     """Esquema para actualizar llamada"""
     call_label: Optional[str] = None
     conversation: Optional[str] = None
+    sentimiento: Optional[str] = None
+    impacto: Optional[str] = None
+    urgencia: Optional[str] = None
+    tema: Optional[str] = None
 
 
 class CallResponse(CallBase):
@@ -48,5 +56,8 @@ class CallAnalytics(BaseModel):
     """Esquema para análisis de llamadas"""
     total_calls: int
     calls_by_operator: dict
+    calls_by_sentiment: dict
+    calls_by_urgency: dict
+    calls_by_impact: dict
     calls_by_date: dict
     average_conversation_length: Optional[float] = None

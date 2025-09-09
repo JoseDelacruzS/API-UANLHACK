@@ -507,3 +507,234 @@ def generate_summary(conversation: str) -> str:
     • Próximo paso: {next_step}
     • Cliente: Cooperativo, disponible para seguimiento
     """.strip()
+
+
+# ENDPOINTS PARA CONEXIÓN CON POSTGRESQL
+from app.models.calls import Call
+from app.models.operators import Operator
+from app.models.clients import Client
+from fastapi import Query
+
+@router.get("/calls/recent")
+async def get_recent_calls(
+    limit: int = Query(10, ge=1, le=100, description="Número de llamadas a retornar"),
+    operator_id: int = Query(None, description="Filtrar por operador"),
+    has_analysis: bool = Query(None, description="Filtrar llamadas con/sin análisis"),
+    db: Session = Depends(get_current_db)
+):
+    """
+    Obtener llamadas recientes de PostgreSQL para que Watson pueda analizarlas.
+    """
+    try:
+        query = db.query(Call).join(Operator).join(Client)
+        
+        if operator_id:
+            query = query.filter(Call.operator_id == operator_id)
+            
+        if has_analysis is not None:
+            if has_analysis:
+                query = query.filter(Call.sentimiento.isnot(None))
+            else:
+                query = query.filter(Call.sentimiento.is_(None))
+        
+        calls = query.order_by(Call.call_date.desc(), Call.call_id.desc()).limit(limit).all()
+        
+        result = []
+        for call in calls:
+            result.append({
+                "call_id": call.call_id,
+                "call_label": call.call_label,
+                "operator_name": call.operator.name,
+                "client_ref": call.client.external_ref,
+                "call_date": call.call_date.isoformat(),
+                "conversation": call.conversation,
+                "sentimiento": call.sentimiento,
+                "impacto": call.impacto,
+                "urgencia": call.urgencia,
+                "tema": call.tema
+            })
+        
+        return {
+            "calls": result,
+            "total": len(result),
+            "source": "postgresql"
+        }
+        
+    except Exception as e:
+        # Si no hay conexión a DB, devolver datos de ejemplo
+        return {
+            "calls": [
+                {
+                    "call_id": 1,
+                    "call_label": "Ejemplo - Sin conexión DB",
+                    "operator_name": "Alex Cordero",
+                    "client_ref": "62351432",
+                    "call_date": "2025-03-03",
+                    "conversation": "Conversación de ejemplo para demostración de Watson",
+                    "sentimiento": "neutral",
+                    "impacto": "medio",
+                    "urgencia": "media",
+                    "tema": "lentitud_servicio"
+                }
+            ],
+            "total": 1,
+            "source": "ejemplo",
+            "error": str(e)
+        }
+
+
+@router.get("/calls/{call_id}")
+async def get_call_detail(
+    call_id: int,
+    db: Session = Depends(get_current_db)
+):
+    """
+    Obtener detalles de una llamada específica para análisis de Watson.
+    """
+    try:
+        call = db.query(Call).join(Operator).join(Client).filter(Call.call_id == call_id).first()
+        
+        if not call:
+            raise HTTPException(status_code=404, detail="Llamada no encontrada")
+        
+        return {
+            "call_id": call.call_id,
+            "call_label": call.call_label,
+            "operator": {
+                "operator_id": call.operator.operator_id,
+                "name": call.operator.name
+            },
+            "client": {
+                "client_id": call.client.client_id,
+                "external_ref": call.client.external_ref
+            },
+            "call_date": call.call_date.isoformat(),
+            "conversation": call.conversation,
+            "analysis": {
+                "sentimiento": call.sentimiento,
+                "impacto": call.impacto,
+                "urgencia": call.urgencia,
+                "tema": call.tema
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener llamada: {str(e)}")
+
+
+@router.put("/calls/{call_id}/analysis")
+async def update_call_analysis(
+    call_id: int,
+    analysis: dict,
+    db: Session = Depends(get_current_db)
+):
+    """
+    Actualizar el análisis de una llamada. Watson puede usar esto para almacenar sus análisis.
+    """
+    try:
+        call = db.query(Call).filter(Call.call_id == call_id).first()
+        
+        if not call:
+            raise HTTPException(status_code=404, detail="Llamada no encontrada")
+        
+        # Actualizar campos de análisis
+        if "sentimiento" in analysis:
+            call.sentimiento = analysis["sentimiento"]
+        if "impacto" in analysis:
+            call.impacto = analysis["impacto"]
+        if "urgencia" in analysis:
+            call.urgencia = analysis["urgencia"]
+        if "tema" in analysis:
+            call.tema = analysis["tema"]
+        
+        db.commit()
+        
+        return {
+            "message": "Análisis actualizado correctamente",
+            "call_id": call_id,
+            "updated_analysis": {
+                "sentimiento": call.sentimiento,
+                "impacto": call.impacto,
+                "urgencia": call.urgencia,
+                "tema": call.tema
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al actualizar análisis: {str(e)}")
+
+
+@router.get("/analytics/dashboard")
+async def get_analytics_dashboard(
+    db: Session = Depends(get_current_db)
+):
+    """
+    Obtener métricas y analytics para Watson Orchestrate dashboard.
+    """
+    try:
+        from sqlalchemy import func
+        
+        # Estadísticas básicas
+        total_calls = db.query(Call).count()
+        calls_with_analysis = db.query(Call).filter(Call.sentimiento.isnot(None)).count()
+        
+        # Llamadas por sentimiento
+        sentiment_stats = db.query(Call.sentimiento, func.count(Call.call_id)).filter(
+            Call.sentimiento.isnot(None)
+        ).group_by(Call.sentimiento).all()
+        
+        # Llamadas por urgencia
+        urgency_stats = db.query(Call.urgencia, func.count(Call.call_id)).filter(
+            Call.urgencia.isnot(None)
+        ).group_by(Call.urgencia).all()
+        
+        # Llamadas por operador
+        operator_stats = db.query(Operator.name, func.count(Call.call_id)).join(
+            Call
+        ).group_by(Operator.name).all()
+        
+        return {
+            "total_calls": total_calls,
+            "analyzed_calls": calls_with_analysis,
+            "analysis_coverage": round((calls_with_analysis / total_calls * 100), 2) if total_calls > 0 else 0,
+            "sentiment_distribution": {sentiment: count for sentiment, count in sentiment_stats},
+            "urgency_distribution": {urgency: count for urgency, count in urgency_stats},
+            "calls_by_operator": {operator: count for operator, count in operator_stats},
+            "source": "postgresql"
+        }
+        
+    except Exception as e:
+        # Si no hay conexión a DB, devolver datos de ejemplo
+        return {
+            "total_calls": 15,
+            "analyzed_calls": 12,
+            "analysis_coverage": 80.0,
+            "sentiment_distribution": {
+                "positivo": 3,
+                "neutral": 7,
+                "negativo": 2
+            },
+            "urgency_distribution": {
+                "alta": 2,
+                "media": 8,
+                "baja": 2
+            },
+            "calls_by_operator": {
+                "Alex Cordero": 3,
+                "Juan Islas": 2,
+                "Sergio Torres": 2,
+                "Karla Dasilva": 1,
+                "Milton Rodriguez": 2,
+                "Carlos Hernandez": 2,
+                "Kenia Urban": 1,
+                "Luis Carrillo": 1,
+                "Pedro Torres": 1
+            },
+            "source": "ejemplo",
+            "error": str(e)
+        }

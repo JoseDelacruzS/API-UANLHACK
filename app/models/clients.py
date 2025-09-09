@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, VARCHAR
 from sqlalchemy.orm import relationship
 from app.config.database import Base
 
@@ -6,9 +6,10 @@ from app.config.database import Base
 class Client(Base):
     """Modelo para clientes"""
     __tablename__ = "clients"
+    __table_args__ = {'schema': 'uanl'}
     
     client_id = Column(Integer, primary_key=True, index=True)
-    external_ref = Column(String(64), nullable=False, unique=True, index=True)
+    external_ref = Column(VARCHAR(64), nullable=False, unique=True, index=True)
     
     # Relación con llamadas
     calls = relationship("Call", back_populates="client")
