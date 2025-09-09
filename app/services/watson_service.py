@@ -4,6 +4,7 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime
 from sqlalchemy.orm import Session
 from loguru import logger
+from app.models.tickets import TicketPriority
 
 from app.config.settings import settings
 from app.schemas.tickets import WatsonTicketRequest, TicketCreate
