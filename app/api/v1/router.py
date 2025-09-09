@@ -6,7 +6,8 @@ from app.api.v1.endpoints import (
     tickets,
     dashboards,
     reports,
-    watson
+    watson,
+    openapi_spec
 )
 
 api_router = APIRouter()
@@ -52,4 +53,10 @@ api_router.include_router(
     watson.router,
     prefix="/watson",
     tags=["watson-orchestrate"]
+)
+
+api_router.include_router(
+    openapi_spec.router,
+    prefix="/openapi",
+    tags=["openapi"]
 )
