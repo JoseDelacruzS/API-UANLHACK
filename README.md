@@ -1,501 +1,289 @@
-# 🚀 API UANL Hack - Sistema de Conversaciones con IA
+# 🚀 API UANL HACK - Sistema de Automatización
 
-API desarrollada en FastAPI que proporciona un sistema completo de gestión de conversaciones con modelos de IA y integración con APIs externas. Utiliza PostgreSQL para almacenar conversaciones y mensajes.
+![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-green.svg)
+![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue.svg)
+![Redis](https://img.shields.io/badge/Redis-7+-red.svg)
 
-## 📋 Características
+API REST construida con FastAPI para automatización de servicios, gestión de tickets, dashboards y reportes con integración a Watson Orchestrate.
 
-- **🤖 Integración con IA**: OpenAI GPT, Hugging Face Transformers
-- **💬 Sistema de Conversaciones**: Gestión completa de conversaciones y mensajes
-- **🗄️ Base de Datos**: PostgreSQL para persistencia de datos
-- **🌐 APIs Externas**: Clima, noticias, mapas y más
-- **📄 Documentación Automática**: Swagger UI integrado
-- **🐳 Docker**: Contenedorización completa
-- **⚡ Caché**: Sistema de caché local para optimización
-- **🔧 Testing**: Suite de pruebas automatizadas
+## ✨ Características
+
+- 🎫 **Gestión de tickets automatizada** - Creación automática desde Watson Orchestrate
+- 📊 **Dashboards en tiempo real** - Métricas y gráficos interactivos
+- 📈 **Reportes y análisis** - Exportación en múltiples formatos (JSON, CSV, XLSX)
+- 🤖 **Integración con Watson Orchestrate** - Procesamiento de solicitudes via webhook
+- 📧 **Automatización de correos** - Notificaciones automáticas por email
+- 🗄️ **Alimentación de datos para BI** - Datos estructurados para análisis
+- 🔄 **Automatización de servicios y visitas** - Programación automática
 
 ## 🏗️ Arquitectura
 
 ```
-API-UANLHACK/
-├── app/
-│   ├── api/endpoints/          # Endpoints de la API
-│   │   ├── ai.py              # Endpoints de IA
-│   │   ├── conversations.py   # Gestión de conversaciones
-│   │   ├── external.py        # APIs externas
-│   │   └── health.py          # Salud del sistema
-│   ├── database/              # Configuración de base de datos
-│   │   └── connection.py      # Conexión PostgreSQL
-│   ├── models/                # Modelos de datos
-│   │   └── models.py          # Modelos SQLAlchemy
-│   ├── services/              # Lógica de negocio
-│   │   ├── ai_service.py      # Servicios de IA
-│   │   ├── conversation_service.py  # Gestión de conversaciones
-│   │   ├── external_api_service.py  # APIs externas
-│   │   └── cache_service.py   # Sistema de caché
-│   └── core/                  # Configuración central
-│       └── config.py          # Configuraciones
-├── tests/                     # Pruebas automatizadas
-├── cache/                     # Directorio de caché
-├── docker-compose.yml         # Configuración Docker
-├── requirements.txt           # Dependencias Python
-├── init_db.py                # Inicialización de DB
-└── start.sh                  # Script de inicio rápido
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│                 │    │                 │    │                 │
+│ Watson          │───▶│ FastAPI         │───▶│ PostgreSQL      │
+│ Orchestrate     │    │ Application     │    │ Database        │
+│                 │    │                 │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                │
+                                ▼
+                       ┌─────────────────┐
+                       │                 │
+                       │ Redis           │
+                       │ (Cache/Queue)   │
+                       │                 │
+                       └─────────────────┘
+                                │
+                                ▼
+                       ┌─────────────────┐
+                       │                 │
+                       │ Celery          │
+                       │ (Background)    │
+                       │                 │
+                       └─────────────────┘
 ```
-
-## 🛠️ Instalación y Configuración
-
-### Inicio Rápido
-
-```bash
-# Clonar repositorio
-git clone <tu-repositorio>
-cd API-UANLHACK
-
-# Configurar variables de entorno
-cp .env.example .env
-# Editar .env con tus credenciales
-
-# Ejecutar script de inicio automático
-./start.sh
-```
-
-### Opción 1: Docker Compose (Recomendado)
-
-1. **Configurar variables de entorno**:
-```bash
-cp .env.example .env
-# Edita .env con tus credenciales reales
-```
-
-2. **Iniciar con Docker**:
-```bash
-docker-compose up --build
-```
-
-3. **Inicializar base de datos**:
-```bash
-docker-compose exec api python init_db.py
-```
-
-### Opción 2: Instalación Local
-
-1. **Prerrequisitos**:
-   - Python 3.8+
-   - PostgreSQL 12+
-   - pip
-
-2. **Instalar dependencias**:
-```bash
-python -m venv venv
-source venv/bin/activate  # En Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-3. **Configurar PostgreSQL**:
-```bash
-# Crear base de datos
-createdb uanl_hack_db
-```
-
-4. **Inicializar base de datos**:
-```bash
-python init_db.py
-```
-
-5. **Ejecutar la aplicación**:
-```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-## 📚 Uso de la API
-
-### Documentación Interactiva
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-
-### Endpoints Principales
-
-#### 1. Gestión de Usuarios
-```bash
-# Crear usuario
-POST /api/v1/conversations/users
-{
-  "username": "usuario123",
-  "email": "usuario@email.com",
-  "full_name": "Usuario Completo"
-}
-```
-
-#### 2. Conversaciones
-```bash
-# Crear conversación
-POST /api/v1/conversations?user_id=1&title=Mi Conversación
-
-# Obtener conversaciones de usuario
-GET /api/v1/conversations/{user_id}
-
-# Chat con IA
-POST /api/v1/conversations/chat
-{
-  "user_id": 1,
-  "conversation_id": 1,
-  "message": "Hola, ¿cómo estás?",
-  "model": "gpt-3.5-turbo"
-}
-```
-
-#### 3. Generación de Texto con IA
-```bash
-POST /api/v1/ai/generate-text
-{
-  "prompt": "Escribe un poema sobre la programación",
-  "model": "gpt-3.5-turbo",
-  "max_tokens": 100,
-  "temperature": 0.7
-}
-```
-
-#### 4. APIs Externas
-```bash
-# Clima
-GET /api/v1/external/weather?city=Monterrey
-
-# Noticias
-GET /api/v1/external/news?category=technology
-
-# Búsqueda en mapas
-GET /api/v1/external/maps/search?query=UANL Monterrey
-```
-
-## 🗄️ Esquema de Base de Datos
-
-### Tablas Principales
-
-- **users**: Información de usuarios
-- **conversations**: Conversaciones de usuarios  
-- **messages**: Mensajes en conversaciones
-- **api_calls**: Registro de llamadas a APIs
-- **conversation_summaries**: Resúmenes de conversaciones
-
-### Relaciones
-- Usuario → Múltiples Conversaciones
-- Conversación → Múltiples Mensajes
-- Conversación → Resúmenes opcionales
-
-## 🧪 Testing
-
-```bash
-# Todas las pruebas
-pytest
-
-# Con cobertura
-pytest --cov=app
-
-# Pruebas específicas
-pytest tests/test_main.py::test_create_conversation
-```
-
-## 🔧 Configuración
-
-### Variables de Entorno (.env)
-
-```bash
-# Base de Datos
-DATABASE_URL=postgresql://postgres:password@localhost:5432/uanl_hack_db
-
-# APIs de IA
-OPENAI_API_KEY=tu-clave-openai
-HUGGINGFACE_API_KEY=tu-clave-huggingface
-
-# APIs Externas
-WEATHER_API_KEY=tu-clave-clima
-NEWS_API_KEY=tu-clave-noticias
-MAPS_API_KEY=tu-clave-mapas
-
-# Configuración
-CACHE_DIR=./cache
-CACHE_DURATION=300
-DEFAULT_MODEL=gpt-3.5-turbo
-```
-
-## 🚨 Troubleshooting
-
-### Problemas Comunes
-
-1. **Error de conexión a PostgreSQL**:
-```bash
-# Verificar que PostgreSQL esté corriendo
-brew services start postgresql  # macOS
-sudo service postgresql start   # Linux
-```
-
-2. **Docker no inicia**:
-```bash
-# Limpiar contenedores
-docker-compose down
-docker-compose up --build
-```
-
-## 📈 Monitoreo
-
-### Health Checks
-- **Básico**: GET `/api/v1/health`
-- **Detallado**: GET `/api/v1/health/detailed`
-
-### Logs
-```bash
-# Docker logs
-docker-compose logs -f api
-
-# Estadísticas de caché
-GET /api/v1/cache/stats
-```
-
-## 🤝 Contribución
-
-1. Fork el proyecto
-2. Crear rama feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit cambios (`git commit -am 'Agregar nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Crear Pull Request
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT. Ver `LICENSE` para más detalles.
-
----
-
-**Desarrollado para UANL Hack 2024** 🎓
-
-## 🚀 Características
-
-- **FastAPI**: Framework moderno y rápido para APIs
-- **Google Sheets**: Como base de datos en la nube
-- **APIs de IA**: OpenAI, Hugging Face, Anthropic
-- **APIs Externas**: Clima, Noticias, Geolocalización
-- **Caché Local**: Sistema de caché con archivos JSON
-- **Documentación automática**: Swagger UI y ReDoc incluidos
-- **Validación de datos**: Con Pydantic schemas
-- **Contenedores**: Docker y Docker Compose
 
 ## 📁 Estructura del Proyecto
 
 ```
 API-UANLHACK/
-├── app/
-│   ├── __init__.py
-│   ├── api/
-│   │   ├── __init__.py
-│   │   └── endpoints/
-│   │       ├── __init__.py
-│   │       ├── health.py              # Endpoints de salud
-│   │       ├── ai_model.py            # Endpoints para IA
-│   │       ├── google_sheets.py       # Endpoints para Google Sheets
-│   │       ├── external_apis.py       # Endpoints para APIs externas
-│   │       └── cache.py               # Endpoints para caché
-│   ├── core/
-│   │   ├── __init__.py
-│   │   └── config.py                  # Configuración
-│   ├── schemas/
-│   │   ├── __init__.py
-│   │   └── schemas.py                 # Esquemas Pydantic
-│   └── services/
-│       ├── __init__.py
-│       ├── google_sheets_service.py   # Servicio Google Sheets
-│       ├── external_api_service.py    # Servicio APIs externas
-│       └── cache_service.py           # Servicio de caché local
-├── docs/
-│   ├── google-sheets-setup.md         # Configuración Google Sheets
-│   └── external-apis-setup.md         # Configuración APIs externas
-├── tests/
-│   ├── __init__.py
-│   └── test_main.py                   # Pruebas
-├── cache/                             # Directorio de caché local
-├── main.py                            # Punto de entrada
-├── requirements.txt                   # Dependencias
-├── Dockerfile                         # Imagen Docker
-├── docker-compose.yml                 # Servicios Docker
-├── .env.example                       # Variables de entorno ejemplo
-├── credentials.json.example           # Ejemplo credenciales Google
-├── .gitignore                         # Archivos ignorados por Git
-└── README.md                          # Este archivo
+├── 📁 app/                          # Código principal de la aplicación
+│   ├── 📁 api/v1/endpoints/         # Endpoints de la API REST
+│   │   ├── 🔗 operators.py          # CRUD de operadores
+│   │   ├── 🔗 clients.py            # CRUD de clientes
+│   │   ├── 🔗 calls.py              # CRUD de llamadas
+│   │   ├── 🔗 tickets.py            # CRUD de tickets
+│   │   ├── 📊 dashboards.py         # Endpoints de dashboards
+│   │   ├── 📈 reports.py            # Endpoints de reportes
+│   │   └── 🤖 watson.py             # Integración Watson Orchestrate
+│   │
+│   ├── 📁 models/                   # Modelos SQLAlchemy
+│   │   ├── 👥 operators.py          # Modelo de operadores
+│   │   ├── 🏢 clients.py            # Modelo de clientes
+│   │   ├── 📞 calls.py              # Modelo de llamadas
+│   │   └── 🎫 tickets.py            # Modelo de tickets
+│   │
+│   ├── 📁 schemas/                  # Esquemas Pydantic
+│   │   ├── ✅ operators.py          # Validación de operadores
+│   │   ├── ✅ clients.py            # Validación de clientes
+│   │   ├── ✅ calls.py              # Validación de llamadas
+│   │   └── ✅ tickets.py            # Validación de tickets
+│   │
+│   ├── 📁 services/                 # Lógica de negocio
+│   │   ├── 🎫 ticket_service.py     # Servicio de tickets
+│   │   ├── 📊 dashboard_service.py  # Servicio de dashboards
+│   │   ├── 📧 email_service.py      # Servicio de emails
+│   │   └── 🤖 watson_service.py     # Servicio de Watson
+│   │
+│   ├── 📁 config/                   # Configuración
+│   │   ├── ⚙️ settings.py           # Configuración de la app
+│   │   └── 🗄️ database.py          # Configuración de BD
+│   │
+│   ├── 📁 core/                     # Funcionalidad core
+│   │   ├── 🔐 security.py           # Autenticación y autorización
+│   │   └── ⚠️ exceptions.py         # Excepciones personalizadas
+│   │
+│   ├── 📁 utils/                    # Utilidades
+│   │   └── 🛠️ helpers.py            # Funciones auxiliares
+│   │
+│   └── 🚀 main.py                   # Punto de entrada
+│
+├── 📁 scripts/                      # Scripts de utilidad
+│   └── 🗄️ init.sql                 # Script de inicialización de BD
+│
+├── 📁 tests/                        # Pruebas unitarias
+├── 📁 docs/                         # Documentación
+├── 📁 migrations/                   # Migraciones de BD
+│
+├── 📋 requirements.txt              # Dependencias Python
+├── 🐳 Dockerfile                    # Configuración Docker
+├── 🐙 docker-compose.yml           # Orquestación de servicios
+├── ⚙️ alembic.ini                  # Configuración de migraciones
+├── 🔧 setup.sh                     # Script de configuración
+├── 🌍 .env                         # Variables de entorno
+└── 📖 README.md                    # Documentación principal
 ```
 
-## 🛠️ Instalación y Configuración
+## 🚀 Instalación y Configuración
 
-### Prerequisitos
+### Prerrequisitos
 
-1. **Google Sheets configurado** (Ver [docs/google-sheets-setup.md](docs/google-sheets-setup.md))
-2. **API Keys de servicios externos** (Ver [docs/external-apis-setup.md](docs/external-apis-setup.md))
+- **Python 3.9+** 🐍
+- **PostgreSQL 15+** 🐘
+- **Redis 7+** 🗄️
+- **Docker & Docker Compose** (opcional) 🐳
 
-### Opción 1: Instalación Local
+### Instalación Local
 
-1. **Clona el repositorio**:
+1. **Clonar el repositorio**
 ```bash
 git clone https://github.com/JoseDelacruzS/API-UANLHACK.git
 cd API-UANLHACK
 ```
 
-2. **Crea un entorno virtual**:
+2. **Crear entorno virtual**
 ```bash
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate  # En Windows: venv\Scripts\activate
 ```
 
-3. **Instala las dependencias**:
+3. **Instalar dependencias**
 ```bash
 pip install -r requirements.txt
 ```
 
-4. **Configura las variables de entorno**:
+4. **Configurar variables de entorno**
 ```bash
 cp .env.example .env
-# Edita el archivo .env con tus configuraciones
+# Editar .env con tus configuraciones
 ```
 
-5. **Coloca las credenciales de Google**:
+5. **Ejecutar la aplicación**
 ```bash
-# Coloca tu archivo credentials.json en la raíz del proyecto
-cp /path/to/your/credentials.json ./credentials.json
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-6. **Ejecuta la aplicación**:
-```bash
-uvicorn main:app --reload
-```
+### Instalación con Docker
 
-### Opción 2: Docker Compose (Recomendado)
-
-1. **Clona el repositorio**:
 ```bash
-git clone https://github.com/JoseDelacruzS/API-UANLHACK.git
-cd API-UANLHACK
-```
-
-2. **Configura variables de entorno**:
-```bash
-cp .env.example .env
-# Edita .env con tus API keys
-```
-
-3. **Ejecuta con Docker Compose**:
-```bash
+# Construir y ejecutar todos los servicios
 docker-compose up --build
+
+# Solo la aplicación
+docker-compose up api
+
+# En segundo plano
+docker-compose up -d
 ```
 
-## 📦 Dependencias Principales
+## 🌐 API Endpoints
 
-### Core
-- **fastapi**: Framework web moderno para Python
-- **uvicorn**: Servidor ASGI para ejecutar FastAPI
-- **pydantic**: Validación de datos y serialización
-- **python-dotenv**: Manejo de variables de entorno
+### 🏠 Principales
 
-### Google Sheets
-- **gspread**: Cliente de Google Sheets
-- **google-auth**: Autenticación con Google
-- **pandas**: Manipulación de datos
-- **openpyxl**: Lectura de archivos Excel
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/` | Información de la API |
+| `GET` | `/health` | Estado de salud |
+| `GET` | `/api/v1/docs` | Documentación Swagger |
+| `GET` | `/api/v1/redoc` | Documentación ReDoc |
 
-### APIs Externas
-- **httpx**: Cliente HTTP asíncrono
-- **requests**: Cliente HTTP síncronoś
+### 🤖 Watson Orchestrate
 
-### Utilidades
-- **aiofiles**: Operaciones de archivos asíncronas
-- **pytest**: Framework de testing
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `POST` | `/api/v1/watson/webhook` | Webhook para recibir datos de Watson |
+| `GET` | `/api/v1/watson/status` | Estado de la integración |
+| `GET` | `/api/v1/watson/sessions` | Sesiones recientes |
+| `POST` | `/api/v1/watson/test-connection` | Probar conexión |
 
-## 🔗 Endpoints Disponibles
+### 🎫 Tickets
 
-### Endpoints Generales
-- `GET /` - Página de inicio con información de la API
-- `GET /docs` - Documentación Swagger UI
-- `GET /redoc` - Documentación ReDoc
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/v1/tickets/` | Listar tickets |
+| `POST` | `/api/v1/tickets/` | Crear ticket |
+| `GET` | `/api/v1/tickets/{id}` | Obtener ticket específico |
+| `PUT` | `/api/v1/tickets/{id}` | Actualizar ticket |
+| `GET` | `/api/v1/tickets/stats` | Estadísticas de tickets |
 
-### Endpoints de Salud
-- `GET /api/v1/health` - Estado básico de la API
-- `GET /api/v1/health/detailed` - Estado detallado con servicios
+### 📊 Dashboards
 
-### Endpoints de Google Sheets
-- `POST /api/v1/sheets/data` - Obtener datos de la hoja
-- `POST /api/v1/sheets/add` - Agregar una fila
-- `PUT /api/v1/sheets/update` - Actualizar una fila
-- `POST /api/v1/sheets/search` - Buscar registros con filtros
-- `GET /api/v1/sheets/columns/{sheet_name}` - Obtener columnas
-- `POST /api/v1/sheets/refresh/{sheet_name}` - Refrescar caché
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/v1/dashboards/metrics` | Métricas principales |
+| `GET` | `/api/v1/dashboards/charts/calls-by-date` | Gráfico de llamadas |
+| `GET` | `/api/v1/dashboards/charts/tickets-by-status` | Gráfico de tickets |
+| `GET` | `/api/v1/dashboards/real-time` | Datos en tiempo real |
 
-### Endpoints de IA
-- `POST /api/v1/ai/generate-text` - Generar texto con OpenAI
-- `POST /api/v1/ai/sentiment-analysis` - Análisis de sentimientos
-- `POST /api/v1/ai/custom-model` - Modelo personalizado
-- `GET /api/v1/ai/models` - Listar modelos disponibles
-- `GET /api/v1/ai/status` - Estado de servicios de IA
+### 📈 Reportes
 
-### Endpoints de APIs Externas
-- `POST /api/v1/weather` - Datos del clima
-- `POST /api/v1/news` - Obtener noticias
-- `POST /api/v1/location` - Geolocalización
-- `POST /api/v1/custom-api` - Llamar API personalizada
-- `GET /api/v1/external-api/status` - Estado de APIs externas
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/v1/reports/calls` | Reporte de llamadas |
+| `GET` | `/api/v1/reports/tickets` | Reporte de tickets |
+| `GET` | `/api/v1/reports/operators-performance` | Rendimiento de operadores |
+| `POST` | `/api/v1/reports/custom` | Reporte personalizado |
+| `GET` | `/api/v1/reports/analytics` | Datos para BI |
 
-### Endpoints de Caché
-- `GET /api/v1/cache/stats` - Estadísticas del caché
-- `DELETE /api/v1/cache/clear` - Limpiar todo el caché
-- `GET /api/v1/cache/{key}` - Obtener valor específico
-- `POST /api/v1/cache/{key}` - Guardar valor
-- `DELETE /api/v1/cache/{key}` - Eliminar clave
+## 🛠️ Stack Tecnológico
 
-## 📝 Ejemplos de Uso
+| Componente | Tecnología | Versión | Propósito |
+|------------|------------|---------|-----------|
+| **Backend** | FastAPI | 0.104.1 | Framework web asíncrono |
+| **Base de Datos** | PostgreSQL | 15+ | Base de datos principal |
+| **Cache/Colas** | Redis | 7+ | Cache y colas de tareas |
+| **ORM** | SQLAlchemy | 2.0.23 | Mapeo objeto-relacional |
+| **Validación** | Pydantic | 2.5.0 | Validación de datos |
+| **Migraciones** | Alembic | 1.12.1 | Migraciones de BD |
+| **Tareas Asíncronas** | Celery | 5.3.4 | Procesamiento en segundo plano |
+| **Autenticación** | JWT | - | Tokens de acceso |
+| **Logs** | Loguru | 0.7.2 | Sistema de logging |
+| **Testing** | Pytest | 7.4.3 | Pruebas unitarias |
+| **Containerización** | Docker | - | Despliegue |
 
-### Obtener Datos de Google Sheets
+## 🗄️ Esquema de Base de Datos
 
-```bash
-curl -X POST "http://localhost:8000/api/v1/sheets/data" \
-  -H "Content-Type: application/json" \
-  -d '{"sheet_name": "Sheet1", "force_refresh": false}'
+```sql
+-- Esquema principal: uanl
+uanl.operators           -- 👥 Operadores del sistema
+uanl.clients             -- 🏢 Clientes/empresas  
+uanl.calls               -- 📞 Registro de llamadas
+uanl.tickets             -- 🎫 Tickets de soporte
+uanl.scheduled_visits    -- 📅 Visitas programadas
+uanl.notifications       -- 📧 Notificaciones enviadas
+uanl.reports             -- 📊 Reportes generados
+uanl.watson_activities   -- 🤖 Actividad de Watson
 ```
 
-### Generar Texto con IA
+## 🔄 Flujo de Trabajo con Watson
+
+1. **📥 Recepción**: Watson envía solicitud al webhook
+2. **🧠 Análisis**: Se analiza el input del usuario usando NLP básico
+3. **🏷️ Clasificación**: Se determina la acción requerida:
+   - ✅ Crear ticket
+   - 📅 Programar visita  
+   - 📧 Enviar notificación
+   - 📊 Generar reporte
+4. **⚡ Ejecución**: Se ejecuta la acción correspondiente
+5. **✅ Respuesta**: Se envía confirmación a Watson
+6. **📝 Seguimiento**: Se registra la actividad para análisis
+
+## 🚀 Uso Rápido
+
+### Iniciar servidor de desarrollo
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/ai/generate-text" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "prompt": "Explica qué es FastAPI",
-    "model": "gpt-3.5-turbo",
-    "max_tokens": 100
-  }'
+# Método 1: Directo
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Método 2: Con script de configuración
+./setup.sh dev
+
+# Método 3: Con Docker
+docker-compose up
 ```
 
-### Obtener Datos del Clima
+### Acceder a la documentación
+
+- **Swagger UI**: http://localhost:8000/api/v1/docs
+- **ReDoc**: http://localhost:8000/api/v1/redoc  
+- **OpenAPI JSON**: http://localhost:8000/api/v1/openapi.json
+
+### Probar la API
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/weather" \
-  -H "Content-Type: application/json" \
-  -d '{"city": "Monterrey"}'
-```
+# Probar endpoint de salud
+curl http://localhost:8000/health
 
-### Buscar Noticias
+# Obtener información de la API
+curl http://localhost:8000/
 
-```bash
-curl -X POST "http://localhost:8000/api/v1/news" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "tecnología", "language": "es"}'
-```
+# Listar operadores
+curl http://localhost:8000/api/v1/operators/
 
-## 🧪 Testing
-
-Ejecutar las pruebas:
-
-```bash
-# Todas las pruebas
-pytest
-
-# Pruebas con coverage
-pytest --cov=app
-
-# Pruebas específicas
-pytest tests/test_main.py -v
+# Ejecutar script de pruebas
+python test_api.py
 ```
 
 ## 🔧 Configuración
@@ -503,83 +291,103 @@ pytest tests/test_main.py -v
 ### Variables de Entorno Principales
 
 ```bash
-# Google Sheets
-GOOGLE_SHEET_ID=1A2B3C4D5E6F7G8H9I0J1K2L3M4N5O6P7Q8R9S0T
-GOOGLE_CREDENTIALS_FILE=credentials.json
+# Base de datos
+DATABASE_URL=postgresql://user:pass@host:5432/db
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_NAME=uanl_db
+DATABASE_USER=postgres
+DATABASE_PASSWORD=password
 
-# APIs de IA
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-HUGGINGFACE_API_KEY=hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Redis
+REDIS_URL=redis://localhost:6379/0
 
-# APIs Externas
-WEATHER_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-NEWS_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-MAPS_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Seguridad
+SECRET_KEY=your-super-secret-key
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
 
-# Caché
-CACHE_DIR=./cache
-CACHE_DURATION=300
+# Watson Orchestrate
+WATSON_API_KEY=your-watson-api-key
+WATSON_URL=your-watson-url
+
+# Email
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+
+# Entorno
+ENVIRONMENT=development
+LOG_LEVEL=INFO
 ```
 
-## 🚀 Despliegue
-
-### Docker
+## 🧪 Testing
 
 ```bash
-# Construir imagen
-docker build -t api-uanl-hack .
+# Ejecutar todas las pruebas
+pytest tests/ -v
 
-# Ejecutar contenedor
-docker run -p 8000:8000 -v $(pwd)/cache:/app/cache api-uanl-hack
+# Ejecutar pruebas con cobertura
+pytest tests/ --cov=app
+
+# Ejecutar script de pruebas de API
+python test_api.py
+
+# Ejecutar pruebas específicas
+pytest tests/test_tickets.py -v
 ```
 
-### Docker Compose
+## 📈 Monitoreo y Logs
+
+- **📋 Logs de aplicación**: Logs con Loguru en `/logs/`
+- **🌸 Monitor Celery**: Flower en http://localhost:5555
+- **📊 Métricas FastAPI**: Integradas en `/api/v1/docs`
+- **🔍 Trazabilidad**: Logs estructurados con request ID
+
+## 🚀 Despliegue en Producción
+
+### Con Docker
 
 ```bash
-# Desarrollo
-docker-compose up --build
+# Construir imagen de producción
+docker build -t uanl-api:latest .
 
-# Producción (detached)
-docker-compose up -d
+# Ejecutar en producción
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
-## 📚 Documentación Adicional
+### Variables de Entorno de Producción
 
-Una vez que la API esté ejecutándose:
-
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **OpenAPI JSON**: http://localhost:8000/openapi.json
-
-Documentación específica:
-- [Configuración de Google Sheets](docs/google-sheets-setup.md)
-- [Configuración de APIs Externas](docs/external-apis-setup.md)
+```bash
+ENVIRONMENT=production
+LOG_LEVEL=WARNING
+DATABASE_URL=postgresql://prod_user:prod_pass@prod_host:5432/prod_db
+REDIS_URL=redis://prod_redis:6379/0
+SECRET_KEY=super-secure-production-key
+```
 
 ## 🤝 Contribución
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit tus cambios (`git commit -m 'Agrega nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Abre un Pull Request
+1. Fork el repositorio
+2. Crea una rama para tu feature: `git checkout -b feature/nueva-funcionalidad`
+3. Commit tus cambios: `git commit -am 'Agregar nueva funcionalidad'`
+4. Push a la rama: `git push origin feature/nueva-funcionalidad`
+5. Crea un Pull Request
 
-## 🔍 Monitoreo y Logs
+## 📞 Soporte
 
-La API incluye logging automático y endpoints de monitoreo:
+- **📧 Email**: soporte@uanl.mx
+- **🐛 Issues**: GitHub Issues
+- **📖 Docs**: `/docs/README.md`
+- **💬 Slack**: #uanl-api-support
 
-- **Estado general**: `GET /api/v1/health/detailed`
-- **Estadísticas de caché**: `GET /api/v1/cache/stats`
-- **Estado de APIs externas**: `GET /api/v1/external-api/status`
-- **Estado de Google Sheets**: `GET /api/v1/sheets/status`
+## 📝 Licencia
 
-## 📄 Licencia
+Este proyecto está bajo la Licencia MIT. Ver `LICENSE` para más detalles.
 
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
+---
 
-## 👥 Equipo
+**🏆 Desarrollado para UANL Hack 2024** 
 
-Desarrollado para el Hackathon UANL 2024
-
-## 📞 Contacto
-
-Para preguntas o soporte, contacta al equipo de desarrollo. 
+*Automatización inteligente de servicios con Watson Orchestrate*
