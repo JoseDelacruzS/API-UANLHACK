@@ -244,6 +244,120 @@ async def get_watson_openapi_spec() -> JSONResponse:
                         }
                     }
                 }
+            },
+            "/watson/analyze-conversation": {
+                "post": {
+                    "summary": "Analizar conversación telefónica",
+                    "operationId": "analyze_conversation_post",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": ["conversation", "operator_id", "client_ref"],
+                                    "properties": {
+                                        "conversation": {
+                                            "type": "string",
+                                            "description": "Texto completo de la conversación"
+                                        },
+                                        "operator_id": {
+                                            "type": "integer",
+                                            "description": "ID del operador"
+                                        },
+                                        "client_ref": {
+                                            "type": "string",
+                                            "description": "Referencia del cliente"
+                                        },
+                                        "call_date": {
+                                            "type": "string",
+                                            "description": "Fecha de la llamada"
+                                        },
+                                        "call_label": {
+                                            "type": "string",
+                                            "description": "Etiqueta de la llamada"
+                                        }
+                                    }
+                                },
+                                "example": {
+                                    "conversation": "Operador: Sí, muy buenas noches, caballero. Me comunico por parte de soporte técnico...",
+                                    "operator_id": 1,
+                                    "client_ref": "CLI-001",
+                                    "call_date": "2025-03-03",
+                                    "call_label": "llamada 1"
+                                }
+                            }
+                        }
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Conversación analizada exitosamente",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "success": {
+                                                "type": "boolean"
+                                            },
+                                            "call_id": {
+                                                "type": "string"
+                                            },
+                                            "analysis": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "call_analysis": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "problem_type": {"type": "string"},
+                                                            "urgency_level": {"type": "string"},
+                                                            "customer_sentiment": {"type": "string"},
+                                                            "resolution_status": {"type": "string"},
+                                                            "follow_up_required": {"type": "boolean"}
+                                                        }
+                                                    },
+                                                    "extracted_entities": {"type": "object"},
+                                                    "recommended_actions": {
+                                                        "type": "array",
+                                                        "items": {"type": "string"}
+                                                    },
+                                                    "summary": {"type": "string"}
+                                                }
+                                            },
+                                            "message": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    },
+                                    "example": {
+                                        "success": True,
+                                        "call_id": "CALL-20241201001",
+                                        "analysis": {
+                                            "call_analysis": {
+                                                "problem_type": "lentitud_servicio",
+                                                "urgency_level": "medium",
+                                                "customer_sentiment": "neutral",
+                                                "resolution_status": "pending_verification",
+                                                "follow_up_required": True
+                                            },
+                                            "extracted_entities": {
+                                                "hora_callback": "21:00",
+                                                "problema_especifico": "indicador_conexion_baja",
+                                                "ajustes_realizados": True
+                                            },
+                                            "recommended_actions": ["programar_callback", "verificar_ajustes_realizados"],
+                                            "summary": "Cliente reporta lentitud. Ajustes realizados. Callback programado 21:00."
+                                        },
+                                        "message": "Conversación analizada exitosamente"
+                                    }
+                                }
+                            }
+                        },
+                        "422": {
+                            "description": "Error de validación"
+                        }
+                    }
+                }
             }
         }
     }

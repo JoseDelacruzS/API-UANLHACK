@@ -37,6 +37,13 @@ class GetStatusRequest(BaseModel):
     query_type: str
     entity_id: str = None
 
+class ConversationAnalysisRequest(BaseModel):
+    conversation: str
+    operator_id: int
+    client_ref: str
+    call_date: str = None
+    call_label: str = None
+
 class SimpleResponse(BaseModel):
     success: bool
     message: str
@@ -291,3 +298,212 @@ async def get_status_simple(
             success=False,
             message=f"Error consultando estado: {str(e)}"
         )
+
+
+@router.post("/analyze-conversation")
+async def analyze_conversation(
+    request: ConversationAnalysisRequest,
+    db: Session = Depends(get_current_db)
+) -> Dict[str, Any]:
+    """🧠 Analizar conversación telefónica y generar insights para Watson"""
+    try:
+        conversation_text = request.conversation
+        
+        # Análisis automático de la conversación
+        analysis = {
+            "call_analysis": {
+                "problem_type": extract_problem_type(conversation_text),
+                "urgency_level": extract_urgency(conversation_text),
+                "customer_sentiment": analyze_sentiment(conversation_text),
+                "resolution_status": extract_resolution_status(conversation_text),
+                "follow_up_required": check_follow_up_needed(conversation_text)
+            },
+            "extracted_entities": extract_entities(conversation_text),
+            "recommended_actions": generate_recommendations(conversation_text),
+            "summary": generate_summary(conversation_text)
+        }
+        
+        # Generar ID de llamada
+        call_id = f"CALL-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        
+        return {
+            "success": True,
+            "call_id": call_id,
+            "analysis": analysis,
+            "message": "Conversación analizada exitosamente"
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Error analizando conversación: {str(e)}"
+        }
+
+
+# 🧠 Funciones de análisis de conversaciones
+def extract_problem_type(conversation: str) -> str:
+    """Extraer tipo de problema de la conversación"""
+    conversation_lower = conversation.lower()
+    
+    if "lentitud" in conversation_lower or "lento" in conversation_lower:
+        return "lentitud_servicio"
+    elif "no funciona" in conversation_lower or "no conecta" in conversation_lower:
+        return "falta_servicio"
+    elif "intermitente" in conversation_lower:
+        return "servicio_intermitente"
+    elif "luz naranja" in conversation_lower or "indicador" in conversation_lower:
+        return "problema_conectividad"
+    else:
+        return "problema_general"
+
+
+def extract_urgency(conversation: str) -> str:
+    """Determinar nivel de urgencia basado en contexto"""
+    conversation_lower = conversation.lower()
+    
+    if "urgente" in conversation_lower or "inmediato" in conversation_lower:
+        return "high"
+    elif "varios aparatos" in conversation_lower or "trabajo" in conversation_lower:
+        return "medium"
+    elif "cuando pueda" in conversation_lower or "no hay prisa" in conversation_lower:
+        return "low"
+    else:
+        return "medium"
+
+
+def analyze_sentiment(conversation: str) -> str:
+    """Analizar sentimiento del cliente"""
+    conversation_lower = conversation.lower()
+    
+    negative_words = ["problema", "lento", "no funciona", "molesto", "frustrante"]
+    positive_words = ["gracias", "muy bien", "perfecto", "excelente"]
+    neutral_words = ["okay", "entiendo", "está bien"]
+    
+    negative_count = sum(1 for word in negative_words if word in conversation_lower)
+    positive_count = sum(1 for word in positive_words if word in conversation_lower)
+    neutral_count = sum(1 for word in neutral_words if word in conversation_lower)
+    
+    if negative_count > positive_count + neutral_count:
+        return "frustrated"
+    elif positive_count > negative_count:
+        return "satisfied"
+    else:
+        return "neutral"
+
+
+def extract_resolution_status(conversation: str) -> str:
+    """Determinar estado de resolución"""
+    conversation_lower = conversation.lower()
+    
+    if "ajuste" in conversation_lower and "realizó" in conversation_lower:
+        return "potentially_resolved"
+    elif "devuelvo la llamada" in conversation_lower or "callback" in conversation_lower:
+        return "pending_verification"
+    elif "técnico" in conversation_lower and "venir" in conversation_lower:
+        return "requires_technician"
+    else:
+        return "unresolved"
+
+
+def check_follow_up_needed(conversation: str) -> bool:
+    """Verificar si se necesita seguimiento"""
+    follow_up_indicators = [
+        "devuelvo la llamada",
+        "mañana temprano", 
+        "en media hora",
+        "revisar",
+        "callback",
+        "verificar"
+    ]
+    
+    return any(indicator in conversation.lower() for indicator in follow_up_indicators)
+
+
+def extract_entities(conversation: str) -> Dict[str, Any]:
+    """Extraer entidades importantes de la conversación"""
+    entities = {
+        "tiempo_estimado": None,
+        "hora_callback": None,
+        "problema_especifico": None,
+        "estado_servicio": None,
+        "ajustes_realizados": False,
+        "ubicacion_cliente": None
+    }
+    
+    conversation_lower = conversation.lower()
+    
+    # Extraer tiempo estimado
+    if "media hora" in conversation_lower:
+        entities["tiempo_estimado"] = "30 minutos"
+    elif "una hora" in conversation_lower:
+        entities["tiempo_estimado"] = "60 minutos"
+    
+    # Extraer hora de callback
+    if "nueve" in conversation_lower and "noche" in conversation_lower:
+        entities["hora_callback"] = "21:00"
+    elif "mañana temprano" in conversation_lower:
+        entities["hora_callback"] = "08:00"
+    
+    # Extraer problema específico
+    if "luz naranja" in conversation_lower:
+        entities["problema_especifico"] = "indicador_conexion_baja"
+        entities["estado_servicio"] = "degradado"
+    
+    # Verificar si se realizaron ajustes
+    if "ajuste" in conversation_lower and "realizó" in conversation_lower:
+        entities["ajustes_realizados"] = True
+    
+    # Extraer ubicación
+    if "no estoy en mi casa" in conversation_lower:
+        entities["ubicacion_cliente"] = "fuera_domicilio"
+    elif "casa" in conversation_lower:
+        entities["ubicacion_cliente"] = "domicilio"
+    
+    return entities
+
+
+def generate_recommendations(conversation: str) -> List[str]:
+    """Generar recomendaciones basadas en la conversación"""
+    recommendations = []
+    conversation_lower = conversation.lower()
+    
+    if "devuelvo la llamada" in conversation_lower:
+        recommendations.append("programar_callback")
+    
+    if "ajuste" in conversation_lower and "realizó" in conversation_lower:
+        recommendations.append("verificar_ajustes_realizados")
+    
+    if "luz naranja" in conversation_lower:
+        recommendations.append("revisar_niveles_señal")
+        recommendations.append("diagnostico_remoto")
+    
+    if "varios aparatos" in conversation_lower:
+        recommendations.append("optimizar_ancho_banda")
+    
+    if "técnico" in conversation_lower:
+        recommendations.append("programar_visita_tecnica")
+    
+    if "lentitud" in conversation_lower:
+        recommendations.append("monitoreo_velocidad")
+        recommendations.append("verificar_configuracion")
+    
+    return recommendations
+
+
+def generate_summary(conversation: str) -> str:
+    """Generar resumen inteligente de la conversación"""
+    conversation_lower = conversation.lower()
+    
+    # Detectar elementos clave
+    problem = "lentitud de servicio" if "lentitud" in conversation_lower else "problema técnico"
+    action_taken = "ajustes realizados" if "ajuste" in conversation_lower else "diagnóstico inicial"
+    next_step = "callback programado" if "devuelvo" in conversation_lower else "seguimiento requerido"
+    
+    return f"""
+    📋 Resumen Automático:
+    • Problema: {problem}
+    • Acción realizada: {action_taken}
+    • Estado: Pendiente de verificación
+    • Próximo paso: {next_step}
+    • Cliente: Cooperativo, disponible para seguimiento
+    """.strip()
